@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"encoding/json"
 )
 
 var (
@@ -58,7 +59,9 @@ func DumpMessagesFromQueue(amqpURI string, queueName string, maxMessages uint, o
 			return fmt.Errorf("Queue Get: %s", err)
 		}
 		if ok {
-			SaveMessageToFile(msg.Body, outputDir, messagesReceived)
+			headers, _ := json.Marshal(msg.Headers)
+			message := []byte(fmt.Sprintf("{\"Headers\": %s, \"Body\": \"%s\"}", headers, msg.Body))
+			SaveMessageToFile(message, outputDir, messagesReceived)
 		} else {
 			VerboseLog("No more messages in queue")
 			break
@@ -68,9 +71,10 @@ func DumpMessagesFromQueue(amqpURI string, queueName string, maxMessages uint, o
 	return nil
 }
 
-func SaveMessageToFile(body []byte, outputDir string, counter uint) {
+
+func SaveMessageToFile(message []byte, outputDir string, counter uint) {
 	filePath := GenerateFilePath(outputDir, counter)
-	ioutil.WriteFile(filePath, body, 0644)
+	ioutil.WriteFile(filePath, message, 0644)
 	fmt.Println(filePath)
 }
 
